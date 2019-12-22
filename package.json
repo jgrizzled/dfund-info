@@ -1,0 +1,35 @@
+{
+  "name": "dfund-info",
+  "version": "0.0.1",
+  "main": "index.html",
+  "license": "MIT",
+  "homepage": "https://jgrizzled.github.io/dfund-info",
+  "dependencies": {
+    "bignumber": "^1.1.0",
+    "jquery": "^3.4.1",
+    "moment": "^2.24.0",
+    "web3": "^1.2.4"
+  },
+  "devDependencies": {
+    "clean-webpack-plugin": "^3.0.0",
+    "css-loader": "^3.2.0",
+    "gh-pages": "^2.1.1",
+    "html-webpack-plugin": "^3.2.0",
+    "live-server": "^1.2.1",
+    "mini-css-extract-plugin": "^0.8.0",
+    "node-sass": "^4.13.0",
+    "sass-loader": "^8.0.0",
+    "webpack": "^4.41.2",
+    "webpack-bundle-analyzer": "^3.6.0",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.9.0",
+    "webpack-merge": "^4.2.2"
+  },
+  "scripts": {
+    "build": "webpack -p --config webpack.build.js",
+    "deploy": "gh-pages -d dist",
+    "build-dev": "webpack --config webpack.dev.js",
+    "dev-server": "webpack-dev-server --config webpack.dev.js --host 0.0.0.0 --public localhost:8080 --open",
+    "prod-server": "live-server dist/"
+  }
+}
