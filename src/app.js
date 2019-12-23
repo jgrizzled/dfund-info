@@ -22,6 +22,7 @@ class App {
   constructor(props) {
     this.sortProp = props.sortProp;
     this.isAscending = props.isAscending;
+    this.perPage = props.perPage;
 
     this.page = 1;
 
@@ -43,7 +44,6 @@ class App {
     this.$melonCheck = this.$settingsForm.find('#melon-check');
     this.$tokensetsCheck = this.$settingsForm.find('#tokensets-check');
     this.$betokenCheck = this.$settingsForm.find('#betoken-check');
-    this.$perPage = this.$settingsForm.find('#per-page');
     this.$pages = $('#pages');
     this.$tbody = $('#tbody-funds');
     this.$currencySelector = $('#currency-selector');
@@ -185,16 +185,13 @@ class App {
     return quotedFunds;
   }
   renderFunds() {
-    // get funds-per-page value
-    let perPage = Number(this.$perPage.val());
-    if (perPage <= 0) perPage = 100;
     // filter funds to display
     this.filterFunds();
     // calculate start/end of page
-    const fundStart = (this.page - 1) * perPage;
-    const fundEnd = fundStart + perPage;
+    const fundStart = (this.page - 1) * this.perPage;
+    const fundEnd = fundStart + this.perPage;
     const start = Math.min(Math.max(fundStart, 1), this.filteredFunds.length);
-    const end = Math.min(fundStart + perPage, this.filteredFunds.length);
+    const end = Math.min(fundStart + this.perPage, this.filteredFunds.length);
     // sum value of funds
     const totalValue = this.filteredFunds.reduce(
       (acc, i) => acc.plus(i.aum),
@@ -202,7 +199,7 @@ class App {
     );
     // render table info header
     this.$appMessage.html(
-      `Total Funds Value: ${quoteChars[this.quoteSymbol]} ${formatNumber(
+      `Market Cap: ${quoteChars[this.quoteSymbol]} ${formatNumber(
         totalValue
       )} <br>
       Showing ${start} - ${end} of ${this.filteredFunds.length} funds
@@ -212,7 +209,7 @@ class App {
     const displayFunds = this.filteredFunds.slice(fundStart, fundEnd);
     this.$tbody.html(this._fundRowsHtml(displayFunds));
     this.$pages.empty();
-    const pages = Math.ceil(this.filteredFunds.length / perPage);
+    const pages = Math.ceil(this.filteredFunds.length / this.perPage);
     // render page number links
     for (let i = 1; i <= pages; i++) {
       let pageLink = `
@@ -446,7 +443,8 @@ const escapeHTML = string =>
 $(async () => {
   const app = new App({
     sortProp: 'aum',
-    isAscending: false
+    isAscending: false,
+    perPage: 100
   });
   await app.init();
 });

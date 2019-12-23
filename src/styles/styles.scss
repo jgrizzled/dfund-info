@@ -46,30 +46,39 @@ header {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: flex-end;
+  align-items: flex-start;
   > * {
-    margin: 0.5rem;
+    margin: 0.5rem 1rem;
   }
-  #fund-name {
-    width: 12rem;
-    height: 2rem;
-    font-size: 1rem;
-    border: 1px solid #e7eaf3;
-    border-radius: 3px;
+  #fund-name-container {
+    height: 3rem;
+    display: flex;
+    align-items: flex-end;
+    padding: 0 0;
+    #fund-name {
+      width: 12rem;
+      height: 2rem;
+      font-size: 1rem;
+      border: 1px solid #e7eaf3;
+      border-radius: 3px;
+      margin: 0 0;
+      padding: 1rem 0.5rem;
+    }
   }
+
   #aum-container {
     text-align: center;
-    border-radius: 3px;
     #aum-settings {
+      border-top: 1px solid #e7eaf3;
       display: flex;
       justify-content: space-evenly;
     }
-    label {
-      border: 1px solid #e7eaf3;
-    }
     input {
-      width: 5rem;
-      border: 0;
+      width: 6rem;
+      border: 1px solid #e7eaf3;
+      border-radius: 3px;
+      padding: 0.2rem 0.1rem;
+      margin: 0.2rem 0.5rem 0 0.5rem;
     }
   }
   #platform-container {
@@ -79,22 +88,27 @@ header {
       display: flex;
       justify-content: space-between;
       label {
-        margin: 0 0.5rem;
+        margin: 0.2rem 0.5rem;
+        display: flex;
+        align-items: flex-start;
+        input {
+          margin: 0 0.2rem;
+        }
       }
-    }
-  }
-  #per-page-container {
-    text-align: center;
-    input {
-      margin: auto auto;
-      width: 3rem;
-      display: block;
-      border: 1px solid #e7eaf3;
-      border-radius: 3px;
     }
   }
   #currency-selector {
     text-align: center;
+    #currency-radios {
+      border-top: 1px solid #e7eaf3;
+      padding-top: 0.2rem;
+      label {
+        margin: 0 0.2rem;
+        input {
+          margin: 0 0.3rem;
+        }
+      }
+    }
   }
 }
 
@@ -163,7 +177,7 @@ header {
       text-align: right;
     }
     .col-si {
-      width: 9rem;
+      width: 10rem;
       text-align: right;
     }
     .col-inception-date {
@@ -274,13 +288,14 @@ footer {
 
 @media screen and (min-width: 600px) {
   .table-container {
+    // Keep Name column (2nd) fixed from the left the width of the rank column
     th:nth-child(2) {
-      left: 2.5rem;
+      left: 3rem;
       z-index: 2;
     }
     td:nth-child(2) {
       position: sticky;
-      left: 2.5rem;
+      left: 3rem;
       z-index: 1;
     }
     td.col-name {
@@ -289,7 +304,7 @@ footer {
   }
 }
 
-@media screen and (min-width: 1100px) {
+@media screen and (min-width: 800px) {
   #settings-form {
     justify-content: space-evenly;
   }

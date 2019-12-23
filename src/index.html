@@ -4,11 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-    <link rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css”>
     <link
-      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
       rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap"
     />
     <title>dFund Info</title>
   </head>
@@ -21,16 +23,15 @@
       </h4>
     </header>
     <form id="settings-form">
-      <input id="fund-name" placeholder="Search funds" />
+      <div id="fund-name-container">
+        <input id="fund-name" placeholder="Search funds" />
+      </div>
       <div id="aum-container">
         Assets
         <div id="aum-settings">
-          <label for="min-aum">
-            Min <input id="min-aum" type="number" />
-          </label>
-          <label for="max-aum">
-            Max <input id="max-aum" type="number" />
-          </label>
+          <input id="min-aum" type="number" placeholder="min" />
+          _
+          <input id="max-aum" type="number" placeholder="max" />
         </div>
       </div>
       <div id="platform-container">
@@ -55,11 +56,8 @@
           </label>
         </div>
       </div>
-      <label for="per-page" id="per-page-container">
-        Funds per page <input id="per-page" type="number" value="100" />
-      </label>
       <div id="currency-selector">
-        Show Prices in:
+        Show Prices in
         <div id="currency-radios">
           <label for="eth-button">
             <input
@@ -68,7 +66,7 @@
               name="denomination"
               value="ETH"
               id="eth-button"
-              disabled="true"
+              disabled
             />ETH
           </label>
           <label for="btc-button">
@@ -78,7 +76,7 @@
               name="denomination"
               value="BTC"
               id="btc-button"
-              disabled="true"
+              disabled
             />BTC
           </label>
           <label for="usd-button">
@@ -88,7 +86,7 @@
               name="denomination"
               value="USD"
               id="usd-button"
-              disabled="true"
+              disabled
               checked
             />USD
           </label>
@@ -103,7 +101,7 @@
             <th class="col-rank">#</th>
             <th class="col-name sortable" data-sort="name">Name</th>
             <th class="col-aum sortable sorted-desc" data-sort="aum">
-              Total Assets
+              Assets
             </th>
             <th class="col-sp sortable" data-sort="sharePrice">
               Share Price
@@ -137,7 +135,7 @@
             <th class="col-rank">#</th>
             <th class="col-name sortable" data-sort="name">Name</th>
             <th class="col-aum sortable sorted-desc" data-sort="aum">
-              Total Assets
+              Assets
             </th>
             <th class="col-sp sortable" data-sort="sharePrice">
               Share Price
@@ -167,16 +165,30 @@
     </div>
     <ul id="pages"></ul>
     <footer>
-    <p>Data sources: <a href="https://thegraph.com/" target="_blank">The Graph</a>, <a href="https://infura.io/" target="_blank">Infura</a>, <a href="https://www.alphavantage.co/" target="_blank">AlphaVantage</a>, <a href="https://www.cryptocompare.com/" target="_blank">CryptoCompare</a></p>
-    <h2>Disclaimer</h2>
-    <p>
-      Data, prices, and returns shown on this website are not guaranteed to be
-      accurate. <br />
-      This is not an endorsement or advertisement for any fund or platform.
-      <br />
-      This is not trading or investment advice. Use this data at your own risk.
-    </p>
-    <p>Made by <a href="https://jgrizzled.github.io/portfolio/" target="_blank">Justin Greene</a></p>
-    <footer>
+      <p>
+        Data sources:
+        <a href="https://thegraph.com/" target="_blank">The Graph</a>,
+        <a href="https://infura.io/" target="_blank">Infura</a>,
+        <a href="https://www.alphavantage.co/" target="_blank">AlphaVantage</a>,
+        <a href="https://www.cryptocompare.com/" target="_blank"
+          >CryptoCompare</a
+        >
+      </p>
+      <h2>Disclaimer</h2>
+      <p>
+        Data, prices, and returns shown on this website are not guaranteed to be
+        accurate. <br />
+        This is not an endorsement or advertisement for any fund or platform.
+        <br />
+        This is not trading or investment advice. Use this data at your own
+        risk.
+      </p>
+      <p>
+        Made by
+        <a href="https://jgrizzled.github.io/portfolio/" target="_blank"
+          >Justin Greene</a
+        >
+      </p>
+    </footer>
   </body>
 </html>
