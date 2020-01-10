@@ -5,7 +5,7 @@ View stats of live decentralized funds on the [Ethereum blockchain](https://ethe
 [Live Demo](https://jgrizzled.github.io/dfund-info)
 
 <p align="center">
-  <img src="https://jgrizzled.github.io/portfolio/img/dfund-info-ss-desktop.png" width="350" alt="dFund Info screenshot">
+  <img src="https://github.com/jgrizzled/portfolio/raw/master/img/dfund-info-ss-desktop.png" width="350" alt="dFund Info screenshot">
 </p>
 
 Technologies: HTML5, SCSS, ES6 JS, Webpack
