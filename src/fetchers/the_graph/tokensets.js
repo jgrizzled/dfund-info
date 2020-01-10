@@ -8,6 +8,9 @@ import { returnsTimestamps } from 'utils/returnsTimestamps';
 import { tokenFetcher } from '../ERC20Fetcher';
 import { priceFetcher } from '../PriceFetcher';
 
+const setDecimals = 18;
+const setDecimalsDivisor = BigNumber(10).pow(setDecimals);
+
 // query TheGraph API for fund data and dispatch data processor
 // callBack function is called per fund to add to main app
 // Awaits fund fetches before returning
@@ -68,10 +71,12 @@ const queryTokenSetsSubgraph = async (first, skip) => {
           oldSet {
             units
             components
+            naturalUnit
           }
           newSet {
             units
             components
+            naturalUnit
           }
         }
       }
@@ -119,12 +124,18 @@ const processTokenSetsFund = async (fund, callBack) => {
     for (const r of Object.keys(retsTimes)) {
       if (retsTimes[r] >= inceptionTimestamp)
         sharePricePromises.push(
-          getRebalancingSetSharePrice(rebalancesWithUnits, retsTimes[r])
+          getRebalancingSetSharePrice(
+            rebalancesWithUnits,
+            fund.set_.naturalUnit,
+            retsTimes[r]
+          )
         );
     }
     const sharePriceResults = await Promise.all(sharePricePromises);
     var sharePrices = {
-      current: sharePriceResults[0].times(fund.set_.units)
+      current: sharePriceResults[0]
+        .times(fund.set_.units)
+        .div(fund.set_.naturalUnit)
     };
     let i = 1;
     for (const r of Object.keys(retsTimes)) {
@@ -143,17 +154,22 @@ const processTokenSetsFund = async (fund, callBack) => {
         );
     }
     const sharePriceResults = await Promise.all(sharePricePromises);
-    var sharePrices = { current: sharePriceResults[0].times(fund.set_.units) };
+    var sharePrices = {
+      current: sharePriceResults[0]
+        .times(fund.set_.units)
+        .div(fund.set_.naturalUnit)
+    };
     let i = 1;
     for (const r of Object.keys(retsTimes)) {
       if (retsTimes[r] >= inceptionTimestamp) {
-        sharePrices[r] = sharePriceResults[i].times(fund.set_.units);
+        sharePrices[r] = sharePriceResults[i]
+          .times(fund.set_.units)
+          .div(fund.set_.naturalUnit);
         i++;
       }
     }
   }
   // Set supply has 18 decimals, divide integer value by 10^18 for human readable decimal number
-  const setDecimalsDivisor = BigNumber(10).pow(18);
   const aum = sharePrices.current
     .times(fund.set_.supply)
     .div(setDecimalsDivisor);
@@ -213,6 +229,7 @@ const calcRebalanceUnits = async (initialNewSetUnits, rebalances) => {
 const calcSetSharePrice = async (set, timestamp) => {
   const units = set.units;
   const components = set.components;
+  const naturalUnit = set.naturalUnit;
   // lookup tokens in set
   const tokens = await Promise.all(
     components.map(c => tokenFetcher.getTokenByAddress(c))
@@ -225,14 +242,22 @@ const calcSetSharePrice = async (set, timestamp) => {
   // sum component USD value * units
   for (let i = 0; i < components.length; i++) {
     const decimalsDivisor = BigNumber(10).pow(tokens[i].decimals);
-    const price = rates[i].times(BigNumber(units[i]).div(decimalsDivisor));
-    sum = sum.plus(price);
+    sum = sum.plus(
+      BigNumber(units[i])
+        .div(decimalsDivisor)
+        .times(rates[i])
+    );
   }
-  return sum;
+  const result = sum.times(setDecimalsDivisor.div(naturalUnit));
+  return result;
 };
 
 // get historical share price of a Rebalancing Set
-const getRebalancingSetSharePrice = async (rebalancesWithUnits, timestamp) => {
+const getRebalancingSetSharePrice = async (
+  rebalancesWithUnits,
+  naturalUnit,
+  timestamp
+) => {
   // find latest rebalance before timestamp, return new set share price * units
   // if oldest rebalance is later than timestamp, use old set
   let latestRebalance = rebalancesWithUnits[rebalancesWithUnits.length - 1];
@@ -242,11 +267,13 @@ const getRebalancingSetSharePrice = async (rebalancesWithUnits, timestamp) => {
       break;
     }
   }
-  if (latestRebalance.timestamp <= timestamp)
-    return (await calcSetSharePrice(latestRebalance.newSet, timestamp)).times(
-      latestRebalance.newUnits
-    );
-  return (await calcSetSharePrice(latestRebalance.oldSet, timestamp)).times(
-    latestRebalance.oldUnits
-  );
+  if (latestRebalance.timestamp <= timestamp) {
+    var set = latestRebalance.newSet;
+    var units = latestRebalance.newUnits;
+  } else {
+    var set = latestRebalance.oldSet;
+    var units = latestRebalance.oldUnits;
+  }
+  const underlyingSetSharePrice = await calcSetSharePrice(set, timestamp);
+  return underlyingSetSharePrice.times(units).div(naturalUnit);
 };

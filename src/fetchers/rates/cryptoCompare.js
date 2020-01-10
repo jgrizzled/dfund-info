@@ -62,4 +62,6 @@ export const cryptoCompare = new RatesApi({
   historicalFetcher: fetchHistoricalRate,
   rateLimitTimeout: 60,
   key: 'c835fca94db2e16d30145d28ffa72bae66985cfcaff0fec8837e4b4f82b51749'
+  //local test key
+  //key: '2c197a1c1cb6ed841efb6366509fe4c679e96ba6fa258446c11a567ee7c2ad70'
 });

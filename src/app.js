@@ -1,3 +1,6 @@
+// dFund Info main app logic
+
+'use strict';
 import $ from 'jquery';
 import BigNumber from 'bignumber.js';
 import * as moment from 'moment';
@@ -55,7 +58,6 @@ class App {
     this.$bothHeaders = $('.table-container thead');
     this.$appMessage = $('#app-message');
     this.$window = $(window);
-    this.tableTop = this.$mainTable.offset().top;
 
     // binders
     this._handleRadioClick = this._handleRadioClick.bind(this);
@@ -323,7 +325,8 @@ class App {
     this.renderFunds();
   }
   _handleWindowScroll() {
-    if (this.$window.scrollTop() < this.tableTop) {
+    const tableTop = this.$mainTable.offset().top;
+    if (this.$window.scrollTop() < tableTop) {
       if (this.fixedTableHeaderVisible) {
         this.$fixedTableHeader.off('scroll');
         this.$mainTable.off('scroll');

@@ -1,0 +1,188 @@
+.hidden {
+  display: none;
+  visibility: hidden;
+}
+
+.table-container {
+  overflow: scroll;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    .col-rank {
+      width: 3rem;
+      text-align: center;
+    }
+    .col-rank {
+      width: 3rem;
+      text-align: center;
+    }
+    .col-name {
+      width: 12rem;
+    }
+    .col-aum {
+      width: 10rem;
+      text-align: right;
+    }
+    .col-sp {
+      width: 8rem;
+      text-align: right;
+    }
+    .col-1d {
+      width: 6rem;
+      text-align: right;
+    }
+    .col-1w {
+      width: 6rem;
+      text-align: right;
+    }
+    .col-1m {
+      width: 6rem;
+      text-align: right;
+    }
+    .col-3m {
+      width: 6rem;
+      text-align: right;
+    }
+    .col-ytd {
+      width: 6rem;
+      text-align: right;
+    }
+    .col-1y {
+      width: 6rem;
+      text-align: right;
+    }
+    .col-si {
+      width: 10rem;
+      text-align: right;
+    }
+    .col-inception-date {
+      width: 9rem;
+    }
+    .col-platform {
+      width: 7rem;
+    }
+    thead {
+      tr {
+        user-select: none;
+        border: 0;
+        th {
+          text-align: left;
+          padding: 1em;
+          color: $table-header-font;
+          background-color: $table-header-bg;
+          position: sticky;
+          top: 0px;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+        th:first-child {
+          left: 0px;
+          z-index: 2;
+        }
+      }
+    }
+    tbody {
+      tr {
+        background-color: $table-row-bg;
+        border: 0;
+        td.col-rank {
+          background-color: $table-frozen-col-bg;
+        }
+      }
+      tr:nth-child(even) {
+        background-color: $table-alt-row-bg;
+        td.col-rank {
+          background-color: $table-alt-frozen-col-bg;
+        }
+      }
+      td {
+        text-align: left;
+        padding: 1rem;
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      td:first-child {
+        position: sticky;
+        left: 0px;
+        z-index: 1;
+      }
+    }
+  }
+}
+
+.negative-num {
+  font-weight: bold;
+  color: $negative-num-font;
+}
+
+.positive-num {
+  font-weight: bold;
+  color: $positive-num-font;
+}
+
+.positive-num::before {
+  content: '+';
+}
+
+#fixed-table-header {
+  position: fixed;
+  top: 0px;
+  z-index: 3;
+  overflow: -moz-scrollbars-none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+#fixed-table-header::-webkit-scrollbar {
+  width: 0 !important;
+}
+
+.sortable:hover {
+  background-color: $sortable-th-hover;
+}
+
+.sorted-desc::after {
+  font-size: 0.8rem;
+  content: ' ▼';
+}
+
+.sorted-asc::after {
+  font-size: 0.8rem;
+  content: ' ▲';
+}
+
+@media screen and (min-width: 600px) {
+  .table-container {
+    // Keep Name column (2nd) fixed from the left the width of the rank column
+    th:nth-child(2) {
+      left: 3rem;
+      z-index: 2;
+    }
+    tbody {
+      td:nth-child(2) {
+        position: sticky;
+        left: 3rem;
+        z-index: 1;
+      }
+      tr {
+        td.col-name {
+          background-color: $table-frozen-col-bg;
+        }
+      }
+      tr:nth-child(even) {
+        td.col-name {
+          background-color: $table-alt-frozen-col-bg;
+        }
+      }
+    }
+  }
+}
+
+@media screen and (min-width: 800px) {
+  #settings-form {
+    justify-content: space-evenly;
+  }
+}

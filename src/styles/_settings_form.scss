@@ -1,0 +1,86 @@
+.settings-form {
+  max-width: 90%;
+  margin: auto auto;
+  padding: 0;
+  border: 1px solid $form-border;
+  border-radius: 5px;
+}
+
+#settings-form {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  background-color: $form-background;
+  border-radius: 6px;
+  box-shadow: 0 0.5rem 1rem -0.125rem rgba(10, 10, 10, 0.1);
+  > * {
+    margin: 1rem 1rem;
+  }
+  #fund-name-container {
+    padding: 0 0;
+    #fund-name {
+      width: 12rem;
+      height: 2rem;
+      font-size: 1rem;
+      border: 1px solid $form-border;
+      border-radius: 3px;
+      margin: 0 0;
+      margin-top: 1.5rem;
+      padding: 1rem 0.5rem;
+    }
+  }
+
+  #aum-container {
+    text-align: center;
+    #aum-settings {
+      margin-top: 0.25rem;
+      border-top: 1px solid $form-border;
+      padding-top: 0.25rem;
+      display: flex;
+      justify-content: space-evenly;
+    }
+    input {
+      width: 6rem;
+      border: 1px solid $form-border;
+      border-radius: 3px;
+      padding: 0.2rem 0.1rem;
+      margin: 0.2rem 0.5rem 0 0.5rem;
+    }
+  }
+  #platform-container {
+    text-align: center;
+    #platform-settings {
+      margin-top: 0.25rem;
+      border-top: 1px solid $form-border;
+      padding-top: 0.25rem;
+      display: flex;
+      justify-content: space-between;
+      label {
+        margin: 0.2rem 0.5rem;
+        display: flex;
+        align-items: flex-start;
+        input {
+          margin: 0 0.2rem;
+        }
+      }
+    }
+  }
+  #currency-selector {
+    text-align: center;
+    #currency-radios {
+      margin-top: 0.25rem;
+      border-top: 1px solid $form-border;
+      padding-top: 0.25rem;
+      label {
+        margin: 0 0.2rem;
+        input {
+          margin: 0 0.3rem;
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,11 @@
+@import './colors';
+@import './settings_form';
+@import './fund_table';
+
 html {
   font-family: 'Roboto', sans-serif;
-  color: #012137;
-  background-color: #fafcff;
+  color: $font-main;
+  background-color: $background;
 }
 
 body * {
@@ -15,258 +19,31 @@ body {
 
 a {
   text-decoration: none;
-  color: #4a56a5;
+  color: $link;
 }
 
 a:hover {
   text-decoration: underline;
+  color: $link-hover;
 }
 
 a:visited {
-  color: #4a56a5;
+  color: $link;
 }
 
 header {
-  margin: auto auto;
+  margin: 0 auto 2rem auto;
   text-align: center;
-}
-
-.settings-form {
-  max-width: 90%;
-  margin: auto auto;
-  padding: 0;
-  border: 1px solid #e7eaf3;
-  border-radius: 5px;
-}
-
-#settings-form {
-  max-width: 1200px;
-  margin: auto auto;
-  padding: 0.5rem 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
-  > * {
-    margin: 0.5rem 1rem;
-  }
-  #fund-name-container {
-    height: 3rem;
-    display: flex;
-    align-items: flex-end;
-    padding: 0 0;
-    #fund-name {
-      width: 12rem;
-      height: 2rem;
-      font-size: 1rem;
-      border: 1px solid #e7eaf3;
-      border-radius: 3px;
-      margin: 0 0;
-      padding: 1rem 0.5rem;
-    }
-  }
-
-  #aum-container {
-    text-align: center;
-    #aum-settings {
-      border-top: 1px solid #e7eaf3;
-      display: flex;
-      justify-content: space-evenly;
-    }
-    input {
-      width: 6rem;
-      border: 1px solid #e7eaf3;
-      border-radius: 3px;
-      padding: 0.2rem 0.1rem;
-      margin: 0.2rem 0.5rem 0 0.5rem;
-    }
-  }
-  #platform-container {
-    text-align: center;
-    #platform-settings {
-      border-top: 1px solid #e7eaf3;
-      display: flex;
-      justify-content: space-between;
-      label {
-        margin: 0.2rem 0.5rem;
-        display: flex;
-        align-items: flex-start;
-        input {
-          margin: 0 0.2rem;
-        }
-      }
-    }
-  }
-  #currency-selector {
-    text-align: center;
-    #currency-radios {
-      border-top: 1px solid #e7eaf3;
-      padding-top: 0.2rem;
-      label {
-        margin: 0 0.2rem;
-        input {
-          margin: 0 0.3rem;
-        }
-      }
-    }
+  h2 {
+    font-size: 1rem;
+    font-weight: 500;
   }
 }
 
 #app-message {
-  margin: 1rem auto;
-  height: 2rem;
+  margin: 2rem auto 1rem auto;
   text-align: center;
-}
-
-.hidden {
-  display: none;
-  visibility: hidden;
-}
-
-.table-container {
-  overflow: scroll;
-  width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  table {
-    border: 1px solid #e7eaf3;
-    width: 100%;
-    table-layout: fixed;
-    border-collapse: collapse;
-    background-color: #fafcff;
-    .col-rank {
-      width: 3rem;
-      text-align: center;
-    }
-    td.col-rank {
-      background-color: #f7f9fc;
-    }
-    .col-name {
-      width: 12rem;
-    }
-    .col-aum {
-      width: 10rem;
-      text-align: right;
-    }
-    .col-sp {
-      width: 8rem;
-      text-align: right;
-    }
-    .col-1d {
-      width: 6rem;
-      text-align: right;
-    }
-    .col-1w {
-      width: 6rem;
-      text-align: right;
-    }
-    .col-1m {
-      width: 6rem;
-      text-align: right;
-    }
-    .col-3m {
-      width: 6rem;
-      text-align: right;
-    }
-    .col-ytd {
-      width: 6rem;
-      text-align: right;
-    }
-    .col-1y {
-      width: 6rem;
-      text-align: right;
-    }
-    .col-si {
-      width: 10rem;
-      text-align: right;
-    }
-    .col-inception-date {
-      width: 9rem;
-    }
-    .col-platform {
-      width: 7rem;
-    }
-    thead {
-      tr {
-        user-select: none;
-        th {
-          text-align: left;
-          padding: 1em;
-          color: #6984aa;
-          background-color: #f6f9fd;
-          position: sticky;
-          top: 0px;
-          overflow: hidden;
-          white-space: nowrap;
-        }
-        th:first-child {
-          left: 0px;
-          z-index: 2;
-        }
-      }
-    }
-    tbody {
-      tr {
-        border-top: 1px solid #e7eaf3;
-      }
-      tr:hover {
-        td,
-        th {
-          background: #fff;
-        }
-      }
-      td {
-        text-align: left;
-        padding: 1rem;
-        overflow: hidden;
-        white-space: nowrap;
-      }
-      td:first-child {
-        position: sticky;
-        left: 0px;
-        z-index: 1;
-      }
-    }
-  }
-}
-
-.negative-num {
-  font-weight: bold;
-  color: red;
-}
-
-.positive-num {
-  font-weight: bold;
-  color: green;
-}
-
-.positive-num::before {
-  content: '+';
-}
-
-#fixed-table-header {
-  position: fixed;
-  top: 0px;
-  z-index: 3;
-  overflow: -moz-scrollbars-none;
-  -ms-overflow-style: none;
-}
-#fixed-table-header::-webkit-scrollbar {
-  width: 0 !important;
-}
-
-.sortable:hover {
-  background-color: #fff;
-}
-
-.sorted-desc::after {
-  font-size: 0.8rem;
-  content: ' ▼';
-}
-
-.sorted-asc::after {
-  font-size: 0.8rem;
-  content: ' ▲';
+  line-height: 1.5rem;
 }
 
 ul#pages {
@@ -281,31 +58,8 @@ ul#pages {
 }
 
 footer {
-  margin: auto auto;
+  margin: 2rem auto;
   font-size: 0.75rem;
+  font-weight: 300;
   text-align: center;
-}
-
-@media screen and (min-width: 600px) {
-  .table-container {
-    // Keep Name column (2nd) fixed from the left the width of the rank column
-    th:nth-child(2) {
-      left: 3rem;
-      z-index: 2;
-    }
-    td:nth-child(2) {
-      position: sticky;
-      left: 3rem;
-      z-index: 1;
-    }
-    td.col-name {
-      background-color: #f7f9fc;
-    }
-  }
-}
-
-@media screen and (min-width: 800px) {
-  #settings-form {
-    justify-content: space-evenly;
-  }
 }

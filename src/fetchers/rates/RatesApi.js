@@ -1,3 +1,6 @@
+// standardized wrapper for an exchange rate API
+// handles rate limiting and job deduplication
+
 import * as moment from 'moment';
 import { PromiseDeduper } from 'utils/PromiseDeduper';
 export class RatesApi {
