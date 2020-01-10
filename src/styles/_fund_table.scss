@@ -3,6 +3,9 @@
   visibility: hidden;
 }
 
+//var for fixed column offset
+$col-rank-width: 3rem;
+
 .table-container {
   overflow: scroll;
   width: 100%;
@@ -13,15 +16,11 @@
     table-layout: fixed;
     border-collapse: collapse;
     .col-rank {
-      width: 3rem;
-      text-align: center;
-    }
-    .col-rank {
-      width: 3rem;
+      width: $col-rank-width;
       text-align: center;
     }
     .col-name {
-      width: 12rem;
+      width: 14rem;
     }
     .col-aum {
       width: 10rem;
@@ -68,7 +67,6 @@
     thead {
       tr {
         user-select: none;
-        border: 0;
         th {
           text-align: left;
           padding: 1em;
@@ -87,28 +85,23 @@
     }
     tbody {
       tr {
-        background-color: $table-row-bg;
-        border: 0;
-        td.col-rank {
-          background-color: $table-frozen-col-bg;
+        td {
+          background-color: $table-row-bg;
+          text-align: left;
+          padding: 1rem;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+        td:first-child {
+          position: sticky;
+          left: 0px;
+          z-index: 1;
         }
       }
       tr:nth-child(even) {
-        background-color: $table-alt-row-bg;
-        td.col-rank {
-          background-color: $table-alt-frozen-col-bg;
+        td {
+          background-color: $table-alt-row-bg;
         }
-      }
-      td {
-        text-align: left;
-        padding: 1rem;
-        overflow: hidden;
-        white-space: nowrap;
-      }
-      td:first-child {
-        position: sticky;
-        left: 0px;
-        z-index: 1;
       }
     }
   }
@@ -157,24 +150,20 @@
 @media screen and (min-width: 600px) {
   .table-container {
     // Keep Name column (2nd) fixed from the left the width of the rank column
-    th:nth-child(2) {
-      left: 3rem;
-      z-index: 2;
-    }
-    tbody {
-      td:nth-child(2) {
-        position: sticky;
-        left: 3rem;
-        z-index: 1;
-      }
+    thead {
       tr {
-        td.col-name {
-          background-color: $table-frozen-col-bg;
+        th:nth-child(2) {
+          left: $col-rank-width;
+          z-index: 2;
         }
       }
-      tr:nth-child(even) {
-        td.col-name {
-          background-color: $table-alt-frozen-col-bg;
+    }
+    tbody {
+      tr {
+        td:nth-child(2) {
+          position: sticky;
+          left: $col-rank-width;
+          z-index: 1;
         }
       }
     }

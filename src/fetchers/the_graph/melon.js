@@ -86,7 +86,6 @@ const queryMelonSubgraph = async (first, skip) => {
         isShutdown: false, nav_gt: 0
       }
     ) {
-      id
       name
       nav
       sharePrice
@@ -94,6 +93,9 @@ const queryMelonSubgraph = async (first, skip) => {
         denominationAsset {
           id
         }
+      }
+      vault {
+        id
       }
       ${calculationsHistoryQueries}
     }
@@ -114,8 +116,9 @@ const processMelonFund = async (fund, callBack) => {
       fund.accounting.hasOwnProperty('denominationAsset') &&
       fund.accounting.denominationAsset.hasOwnProperty('id') &&
       fund.accounting.denominationAsset.id.includes('0x') &&
-      fund.hasOwnProperty('id') &&
-      fund.id.includes('0x') &&
+      fund.hasOwnProperty('vault') &&
+      fund.vault.hasOwnProperty('id') &&
+      fund.vault.id.includes('0x') &&
       fund.hasOwnProperty('inceptionCalcs') &&
       fund.inceptionCalcs.length > 0 &&
       fund.inceptionCalcs[0].hasOwnProperty('timestamp') &&
@@ -157,7 +160,7 @@ const processMelonFund = async (fund, callBack) => {
     new Fund({
       platformName: 'Melon',
       platformURL: 'https://melonprotocol.com/',
-      address: fund.id,
+      address: fund.vault.id,
       name: fund.name,
       denomToken,
       inceptionTimestamp: fund.inceptionCalcs[0].timestamp,
