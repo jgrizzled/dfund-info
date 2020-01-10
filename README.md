@@ -2,9 +2,8 @@
 
 View stats of live decentralized funds on the [Ethereum blockchain](https://ethereum.org/). Currently supports the [Melon platform](https://melonprotocol.com/), [TokenSets](https://www.tokensets.com/), and [Betoken](https://betoken.fund//).
 
-[Live Demo](https://jgrizzled.github.io/dfund-info)
-
 <p align="center">
+  [Live Demo](https://jgrizzled.github.io/dfund-info)
   <img src="https://github.com/jgrizzled/portfolio/raw/master/img/dfund-info-ss-desktop.png" width="350" alt="dFund Info screenshot">
 </p>
 
