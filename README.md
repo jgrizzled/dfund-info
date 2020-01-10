@@ -9,8 +9,11 @@ View stats of live decentralized funds on the [Ethereum blockchain](https://ethe
 </p>
 
 Technologies: HTML5, SCSS, ES6 JS, Webpack
+
 Libraries: jQuery, Web3, BigNumber, Moment
+
 APIs: [The Graph](https://thegraph.com/), [Infura](https://infura.io/), [AlphaVantage](https://www.alphavantage.co/),[CryptoCompare](https://www.cryptocompare.com/)
+
 
 Note: running locally may require your own API keys
 
