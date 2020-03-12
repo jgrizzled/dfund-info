@@ -23,6 +23,8 @@ export class PriceFetcher {
   }
   // check cache for rate or call API
   async fetchRate(_denomSymbol, _quoteSymbol, timestamp) {
+    // TODO find cUSDC rate API
+    if (_denomSymbol.toUpperCase() === 'CUSDC') return BigNumber(0.021);
     const denomSymbol = this.normalizeTokenSymbol(_denomSymbol);
     const quoteSymbol = this.normalizeTokenSymbol(_quoteSymbol);
     if (denomSymbol == quoteSymbol) return BigNumber(1);
@@ -62,9 +64,9 @@ export class PriceFetcher {
   normalizeTokenSymbol(_symbol) {
     const symbol = _symbol.toUpperCase();
     const symbolLookup = {
-      BTC: ['WBTC', 'TBTC'],
+      BTC: ['WBTC', 'TBTC', 'imBTC'],
       ETH: ['WETH'],
-      USD: ['DAI', 'USDC', 'USDT', 'GUSD', 'PAX', 'CUSDC']
+      USD: ['DAI', 'USDC', 'USDT', 'GUSD', 'PAX']
     };
     for (const normalSymbol of Object.keys(symbolLookup)) {
       if (symbolLookup[normalSymbol].includes(symbol)) return normalSymbol;
