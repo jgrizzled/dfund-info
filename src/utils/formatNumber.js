@@ -4,14 +4,15 @@ import BigNumber from 'bignumber.js';
 
 // format numbers to have up to 2 decimal places unless there are leading zeroes
 export function formatNumber(number) {
-  if (number === undefined) return '--';
+  if (
+    typeof number !== 'number' &&
+    !(number instanceof BigNumber && !number.isNaN())
+  )
+    return '--';
   const price = BigNumber(number);
   if (price.comparedTo(10 ** -8) === -1) return '0';
   // truncate extra decimal places
-  const [int, dec] = price
-    .toFixed()
-    .toString()
-    .split('.');
+  const [int, dec] = price.toFixed().toString().split('.');
   if (dec !== undefined) {
     const firstNonZero = dec.split('').findIndex(x => x !== '0');
     if (int !== '0') {
@@ -26,9 +27,13 @@ export function formatNumber(number) {
 }
 
 // format number to percentage (*100%) with two decimal places
-export function formatPercentage(percentage) {
-  if (percentage === undefined) return '--';
-  return numberWithCommas((percentage * 100).toFixed(2)) + '%';
+export function formatPercentage(number) {
+  if (
+    typeof number !== 'number' &&
+    !(number instanceof BigNumber && !number.isNaN())
+  )
+    return '--';
+  return numberWithCommas((number * 100).toFixed(2)) + '%';
 }
 
 // insert commas

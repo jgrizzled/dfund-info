@@ -6,25 +6,26 @@ import BigNumber from 'bignumber.js';
 import { Fund } from '../Fund';
 import { fetchSubgraphQuery } from './fetchSubgraphQuery';
 import { returnsTimestamps } from 'utils/returnsTimestamps';
+import logger from 'logger';
 
 // query TheGraph API for fund data and dispatch data processor
 // callBack function is called per fund to add to main app
 // Awaits fund fetch before returning
 export const fetchBetokenFund = async (batch, maxFunds, callBack) => {
   if (batch < 1 || maxFunds < 1) return;
-  console.log('Fetching fund from Betoken subgraph');
+  logger.log('Fetching fund from Betoken subgraph');
   try {
     var response = await queryBetokenSubgraph();
   } catch (e) {
-    console.log('Error fetching Betoken subgraph', e);
+    logger.log('Error fetching Betoken subgraph', e);
     return;
   }
   const fetchedFund = response.data.funds;
   if (fetchedFund === undefined || fetchedFund.length === 0) {
-    console.log('Error: No Betoken fund found');
+    logger.log('Error: No Betoken fund found');
     return;
   }
-  console.log('Got Betoken fund');
+  logger.log('Got Betoken fund');
   await processBetokenFund(fetchedFund[0], callBack);
 };
 
@@ -97,7 +98,7 @@ const processBetokenFund = async (fund, callBack) => {
         moment('2017-01-01').unix()
     )
   ) {
-    console.log('Error: Invalid Betoken data', fund);
+    logger.log('Error: Invalid Betoken data', fund);
     return;
   }
   //Betoken data is denominated in Dai (already decimals-adjusted)

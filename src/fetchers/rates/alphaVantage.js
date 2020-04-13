@@ -4,14 +4,17 @@
 import BigNumber from 'bignumber.js';
 import { RatesApi } from './RatesApi';
 import * as moment from 'moment';
+import config from 'config';
+const { alphaVantageAPIkey } = config;
+import logger from 'logger';
 
 // Fetch latest exchange rate for a pair
-const fetchCurrentRate = async (denomSymbol, quoteSymbol, key) => {
-  console.log(
+const fetchCurrentRate = async (denomSymbol, quoteSymbol) => {
+  logger.log(
     `Fetching current rate for ${denomSymbol}/${quoteSymbol} from AlphaVantage`
   );
   const response = await fetch(
-    `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${denomSymbol}&to_currency=${quoteSymbol}&apikey=${key}`
+    `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${denomSymbol}&to_currency=${quoteSymbol}&apikey=${alphaVantageAPIkey}`
   );
   if (!response.ok) throw new Error('AlphaVantage response error');
   const responseJSON = await response.json();
@@ -41,12 +44,12 @@ const fetchCurrentRate = async (denomSymbol, quoteSymbol, key) => {
 };
 
 // Fetch an exchange rate timeseries for a pair, going back a few years
-const fetchTimeSeries = async (denomSymbol, quoteSymbol, timestamp, key) => {
-  console.log(
+const fetchTimeSeries = async (denomSymbol, quoteSymbol) => {
+  logger.log(
     `Fetching time series for ${denomSymbol}/${quoteSymbol} from AlphaVantage`
   );
   var response = await fetch(
-    `https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=${denomSymbol}&market=${quoteSymbol}&apikey=${key}`
+    `https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=${denomSymbol}&market=${quoteSymbol}&apikey=${alphaVantageAPIkey}`
   );
   if (!response.ok) throw new Error('AlphaVantage response error');
   const responseJSON = await response.json();
@@ -86,6 +89,6 @@ const fetchTimeSeries = async (denomSymbol, quoteSymbol, timestamp, key) => {
 export const alphaVantage = new RatesApi({
   currentFetcher: fetchCurrentRate,
   timeSeriesFetcher: fetchTimeSeries,
-  rateLimitTimeout: 60,
-  key: 'JQ5UWR09CPSA50BB'
+  rateLimitTimeout: 2,
+  retries: 3
 });

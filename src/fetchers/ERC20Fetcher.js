@@ -6,11 +6,12 @@ import Web3 from 'web3'; // Ethereum blockchain API
 import { ERC20Abi } from './abi/ERC20.abi';
 import { ERC20OldAbi } from './abi/ERC20Old.abi';
 import { PromiseDeduper } from 'utils/PromiseDeduper';
+import config from 'config';
+const { web3Provider } = config;
+import logger from 'logger';
 
 // Infura API key
-const web3 = new Web3(
-  'https://mainnet.infura.io/v3/b89c21c5a5d149d7b38562a7f28f201e'
-);
+const web3 = new Web3(web3Provider);
 
 export class ERC20Fetcher {
   constructor() {
@@ -36,7 +37,7 @@ export class ERC20Fetcher {
   }
   // internal method that calls the web3 API
   async _fetchERC20Token(address) {
-    console.log('Fetching ERC20 token ' + address);
+    logger.log('Fetching ERC20 token ' + address);
     const token = { address };
     let name, symbol, decimals;
     try {

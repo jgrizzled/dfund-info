@@ -7,13 +7,13 @@ import { RatesApi } from '../rates/RatesApi';
 const testRatesApi = new RatesApi({
   currentFetcher: async () => BigNumber(Math.random() * 10000),
   historicalFetcher: async () => BigNumber(Math.random() * 10000),
-  key: '',
-  rateLimitTimeout: 60
+  rateLimitTimeout: 2,
+  retries: 3
 });
 const testTimeSeriesApi = new RatesApi({
   timeSeriesFetcher: async () => [],
-  key: '',
-  rateLimitTimeout: 60
+  rateLimitTimeout: 2,
+  retries: 3
 });
 
 export const priceFetcher = new PriceFetcher({

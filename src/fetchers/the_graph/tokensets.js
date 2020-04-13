@@ -7,6 +7,7 @@ import { fetchSubgraphQuery } from './fetchSubgraphQuery';
 import { returnsTimestamps } from 'utils/returnsTimestamps';
 import { tokenFetcher } from '../ERC20Fetcher';
 import { priceFetcher } from '../PriceFetcher';
+import logger from 'logger';
 
 const setDecimals = 18;
 const setDecimalsDivisor = BigNumber(10).pow(setDecimals);
@@ -21,16 +22,16 @@ export const fetchTokenSetsFunds = async (batch, maxFunds, callBack) => {
   if (batch > maxFunds) batch = maxFunds;
   const promises = [];
   while (fundCount < maxFunds) {
-    console.log(`Fetching up to ${batch} funds from TokenSets subgraph`);
+    logger.log(`Fetching up to ${batch} funds from TokenSets subgraph`);
     try {
       var response = await queryTokenSetsSubgraph(batch, skip);
     } catch (e) {
-      console.log('Error fetching TokenSets subgraph', e);
+      logger.error('Cannot fetch TokenSets subgraph ' + e.message + e.stack);
       return;
     }
     const fetchedFunds = response.data.tokenSets;
     if (fetchedFunds === undefined || fetchedFunds.length === 0) break;
-    console.log(`Got ${fetchedFunds.length} TokenSets funds`);
+    logger.log(`Got ${fetchedFunds.length} TokenSets funds`);
     // keep track of promises
     for (const fund of fetchedFunds) {
       promises.push(processTokenSetsFund(fund, callBack));
@@ -39,11 +40,12 @@ export const fetchTokenSetsFunds = async (batch, maxFunds, callBack) => {
     if (fetchedFunds.length < batch) break;
     skip += batch;
   }
-  if (fundCount === 0) console.log('Error: No TokenSets funds found');
-  await Promise.all(promises);
+  if (fundCount === 0) logger.warn('No TokenSets funds found');
+  await Promise.all(promises.map(p => p.catch(e => logger.error(e))));
 };
 
 // build and send GraphQL query to The Graph
+// TODO: handle >1000 rebalances
 const queryTokenSetsSubgraph = async (first, skip) => {
   const query = `{
       tokenSets(
@@ -99,7 +101,7 @@ const processTokenSetsFund = async (fund, callBack) => {
       fund.hasOwnProperty('rebalances')
     )
   ) {
-    console.log('Error: invalid TokenSets fund data', fund);
+    logger.warn('Invalid TokenSets fund data', fund);
     return;
   }
   //TokenSets don't have a concept of a denomination asset, so normalize prices to USD
@@ -119,60 +121,56 @@ const processTokenSetsFund = async (fund, callBack) => {
       fund.rebalances
     );
     // calc current share price
-    const sharePricePromises = [calcSetSharePrice(fund.rebalances[0].newSet)];
+    const sharePricePromises = {
+      current: calcSetSharePrice(fund.rebalances[0].newSet)
+    };
     // calc historical share prices
-    for (const r of Object.keys(retsTimes)) {
+    for (const r in retsTimes) {
       if (retsTimes[r] >= inceptionTimestamp)
-        sharePricePromises.push(
-          getRebalancingSetSharePrice(
-            rebalancesWithUnits,
-            fund.set_.naturalUnit,
-            retsTimes[r]
-          )
+        sharePricePromises[r] = getRebalancingSetSharePrice(
+          rebalancesWithUnits,
+          fund.set_.naturalUnit,
+          retsTimes[r]
         );
     }
-    const sharePriceResults = await Promise.all(sharePricePromises);
     var sharePrices = {
-      current: sharePriceResults[0]
+      current: (await sharePricePromises.current)
         .times(fund.set_.units)
         .div(fund.set_.naturalUnit)
     };
-    let i = 1;
-    for (const r of Object.keys(retsTimes)) {
-      if (retsTimes[r] >= inceptionTimestamp) {
-        sharePrices[r] = sharePriceResults[i];
-        i++;
-      }
+    for (const r in sharePricePromises) {
+      if (r === 'current') continue;
+      sharePrices[r] = await sharePricePromises[r];
     }
   } else {
     // calculate share prices for funds without rebalances
-    const sharePricePromises = [calcSetSharePrice(fund.underlyingSet)];
-    for (const r of Object.keys(retsTimes)) {
+    const sharePricePromises = {
+      current: calcSetSharePrice(fund.underlyingSet)
+    };
+    for (const r in retsTimes) {
       if (retsTimes[r] >= inceptionTimestamp)
-        sharePricePromises.push(
-          calcSetSharePrice(fund.underlyingSet, retsTimes[r])
+        sharePricePromises[r] = calcSetSharePrice(
+          fund.underlyingSet,
+          retsTimes[r]
         );
     }
-    const sharePriceResults = await Promise.all(sharePricePromises);
     var sharePrices = {
-      current: sharePriceResults[0]
+      current: (await sharePricePromises.current)
         .times(fund.set_.units)
         .div(fund.set_.naturalUnit)
     };
-    let i = 1;
-    for (const r of Object.keys(retsTimes)) {
-      if (retsTimes[r] >= inceptionTimestamp) {
-        sharePrices[r] = sharePriceResults[i]
-          .times(fund.set_.units)
-          .div(fund.set_.naturalUnit);
-        i++;
-      }
+    for (const r in sharePricePromises) {
+      if (r === 'current') continue;
+      sharePrices[r] = (await sharePricePromises[r])
+        .times(fund.set_.units)
+        .div(fund.set_.naturalUnit);
     }
   }
   // Set supply has 18 decimals, divide integer value by 10^18 for human readable decimal number
   const aum = sharePrices.current
     .times(fund.set_.supply)
     .div(setDecimalsDivisor);
+
   await callBack(
     new Fund({
       platformName: 'TokenSets',
@@ -242,11 +240,7 @@ const calcSetSharePrice = async (set, timestamp) => {
   // sum component USD value * units
   for (let i = 0; i < components.length; i++) {
     const decimalsDivisor = BigNumber(10).pow(tokens[i].decimals);
-    sum = sum.plus(
-      BigNumber(units[i])
-        .div(decimalsDivisor)
-        .times(rates[i])
-    );
+    sum = sum.plus(BigNumber(units[i]).div(decimalsDivisor).times(rates[i]));
   }
   const result = sum.times(setDecimalsDivisor.div(naturalUnit));
   return result;

@@ -7,6 +7,7 @@ import { Fund } from '../Fund';
 import { fetchSubgraphQuery } from './fetchSubgraphQuery';
 import { returnsTimestamps } from 'utils/returnsTimestamps';
 import { tokenFetcher } from '../ERC20Fetcher';
+import logger from 'logger';
 
 // query TheGraph API for fund data and dispatch data processor
 // callBack function is called per fund to add to main app
@@ -18,16 +19,16 @@ export const fetchMelonFunds = async (batch, maxFunds, callBack) => {
   if (batch > maxFunds) batch = maxFunds;
   const promises = [];
   while (fundCount < maxFunds) {
-    console.log(`Fetching up to ${batch} funds from Melon subgraph`);
+    logger.log(`Fetching up to ${batch} funds from Melon subgraph`);
     try {
       var response = await queryMelonSubgraph(batch, skip);
     } catch (e) {
-      console.log('Error fetching Melon subgraph', e);
+      logger.log('Error fetching Melon subgraph', e);
       return;
     }
     const fetchedFunds = response.data.funds;
     if (fetchedFunds === undefined || fetchedFunds.length === 0) break;
-    console.log(`Got ${fetchedFunds.length} Melon funds`);
+    logger.log(`Got ${fetchedFunds.length} Melon funds`);
     // build promise array
     for (const fund of fetchedFunds) {
       promises.push(processMelonFund(fund, callBack));
@@ -36,7 +37,7 @@ export const fetchMelonFunds = async (batch, maxFunds, callBack) => {
     if (fetchedFunds.length < batch) break;
     skip += batch;
   }
-  if (fundCount === 0) console.log('Error: No Melon funds found');
+  if (fundCount === 0) logger.log('Error: No Melon funds found');
   // wait until all promises finish
   await Promise.all(promises);
 };
@@ -129,7 +130,7 @@ const processMelonFund = async (fund, callBack) => {
       fund.sharePrice > 0
     )
   ) {
-    console.log('Error: invalid Melon fund data', fund);
+    logger.log('Error: invalid Melon fund data', fund);
     return;
   }
   // lookup fund denomination asset
@@ -138,7 +139,7 @@ const processMelonFund = async (fund, callBack) => {
       fund.accounting.denominationAsset.id
     );
   } catch (e) {
-    console.log(e);
+    logger.log(e);
     return;
   }
   // divide by this amount to convert integer values into human readable numbers with decimals

@@ -8,12 +8,24 @@ import { formatNumber, formatPercentage } from 'utils/formatNumber';
 import { settlePromises } from 'utils/settlePromises';
 import { returnsTimestamps } from 'utils/returnsTimestamps';
 import 'styles/styles.scss';
+import config from 'config';
+const { mockAPIs } = config;
 // Real data API hookups
-import { fundFetcher } from 'fetchers/FundFetcher';
-import { priceFetcher } from 'fetchers/PriceFetcher';
-// Test data API hookups
-//import { fundFetcher } from 'fetchers/test/fundFetcher-test';
-//import { priceFetcher } from 'fetchers/test/priceFetcher-test';
+import { fundFetcher as ff } from 'fetchers/FundFetcher';
+import { priceFetcher as pf } from 'fetchers/PriceFetcher';
+// Mock API hookups
+import { fundFetcher as mock_ff } from 'fetchers/test/fundFetcher-test';
+import { priceFetcher as mock_pf } from 'fetchers/test/priceFetcher-test';
+let fundFetcher, priceFetcher;
+if (mockAPIs) {
+  fundFetcher = mock_ff;
+  priceFetcher = mock_pf;
+} else {
+  fundFetcher = ff;
+  priceFetcher = pf;
+}
+import { isBN, isPosBN } from 'utils/isBigNumber';
+import logger from 'logger';
 
 const quoteChars = {
   USD: '$',
@@ -78,24 +90,24 @@ class App {
     priceFetcher
       .fetchTimeSeries('ETH', 'USD')
       .then(() => {
-        console.log('Got ETH/USD timeseries');
+        logger.log('Got ETH/USD timeseries');
       })
       .catch(e => {
-        console.log(e);
+        logger.log(e);
       });
     priceFetcher
       .fetchTimeSeries('BTC', 'USD')
       .then(() => {
-        console.log('Got BTC/USD timeseries');
+        logger.log('Got BTC/USD timeseries');
       })
       .catch(e => {
-        console.log(e);
+        logger.log(e);
       });
     // start fund fetch jobs
     try {
       await fundFetcher.fetchFunds(this.addFund);
     } catch (e) {
-      console.log(e);
+      logger.log(e);
       this.$appMessage.text('Error: failed to load funds');
       return;
     }
@@ -108,82 +120,102 @@ class App {
   async addFund(fund) {
     this.funds.push(fund);
     try {
-      var quotedFunds = await this.calcFundQuotes([fund]);
+      const quotedFunds = await this.calcFundQuotes([fund]);
+      this.quotedFunds.push(...quotedFunds);
     } catch (e) {
-      console.log('Error quoting fund', e, fund);
+      logger.error('Error quoting fund', e, fund);
     }
-    this.quotedFunds.push(...quotedFunds);
   }
   // calculate prices/returns in terms of quote symbol
   async calcFundQuotes(funds) {
-    const retsTimes = returnsTimestamps();
     // initialize jobs object
     const ratesJobs = {};
-    for (const r of Object.keys(retsTimes)) {
-      ratesJobs[r] = [];
-    }
-    ratesJobs.currentRate = [];
     // build price lookup jobs
     funds.forEach(fund => {
-      ratesJobs.currentRate.push(
-        priceFetcher.fetchRate(fund.denomToken.symbol, this.quoteSymbol)
+      const retsTimes = returnsTimestamps(fund.inceptionTimestamp);
+      ratesJobs[fund.address] = {};
+      ratesJobs[fund.address].currentRate = priceFetcher.fetchRate(
+        fund.denomToken.symbol,
+        this.quoteSymbol
       );
-      for (const r of Object.keys(retsTimes)) {
-        ratesJobs[r].push(
-          priceFetcher.fetchRate(
+      for (const k in retsTimes) {
+        if (retsTimes[k] >= fund.inceptionTimestamp)
+          ratesJobs[fund.address][k] = priceFetcher.fetchRate(
             fund.denomToken.symbol,
             this.quoteSymbol,
-            fund.retsTimes[r]
-          )
-        );
+            retsTimes[k]
+          );
       }
     });
     // await price lookups
-    const ratesResults = {};
-    for (const j of Object.keys(ratesJobs)) {
-      ratesResults[j] = await settlePromises(ratesJobs[j]);
-    }
     // calculate price quotes/conversions
     const quotedFunds = [];
-    funds.forEach((fund, i) => {
-      if (ratesResults.currentRate[i] instanceof BigNumber) {
-        // calc returns conversions
-        const convertedReturns = {};
-        for (const r of Object.keys(retsTimes)) {
-          if (
-            ratesResults[r][i] instanceof BigNumber &&
-            ratesResults[r][i].gt(0)
-          ) {
-            // sanity check: ignore returns greater than 100,000%
-            if (fund.returns[r] !== undefined && fund.returns[r].lte(1000)) {
-              // currentRate / pastRate - 1
-              const quoteSymbolReturn = ratesResults.currentRate[i]
-                .div(ratesResults[r][i])
-                .minus(1);
-              // (fundReturns + 1) * (quoteSymbolReturns + 1) - 1
-              convertedReturns[r] = fund.returns[r]
-                .plus(1)
-                .times(quoteSymbolReturn.plus(1))
-                .minus(1);
-            }
-          } else console.log('Error: got invalid rate: ' + ratesResults[r][i]);
+    await Promise.all(
+      funds.map(async fund => {
+        const ratesResults = {};
+        for (const k in ratesJobs[fund.address]) {
+          try {
+            ratesResults[k] = await ratesJobs[fund.address][k];
+          } catch (e) {
+            logger.error(
+              `Cannot quote fund ${fund.name} ${fund.address} from ${fund.platformName} for ${k}: ${e.message}`
+            );
+            return;
+          }
         }
-        // copy converted fund data
-        quotedFunds.push({
-          name: fund.name,
-          address: fund.address,
-          denomSymbol: fund.denomToken.symbol,
-          inceptionTimestamp: fund.inceptionTimestamp,
-          aum: fund.aum.times(ratesResults.currentRate[i]),
-          sharePrice: fund.sharePrice.times(ratesResults.currentRate[i]),
-          returns: convertedReturns,
-          platformName: fund.platformName,
-          platformURL: fund.platformURL
-        });
-      } else
-        console.log('Error: got invalid rate ' + ratesResults.currentRate[i]);
-    });
-    if (quotedFunds.length === 0) throw new Error('No prices found');
+        if (isPosBN(ratesResults.currentRate)) {
+          // calc returns conversions
+          const convertedReturns = {};
+          for (const k in ratesResults) {
+            if (k === 'currentRate') continue;
+            if (isPosBN(ratesResults[k])) {
+              if (isBN(fund.returns[k])) {
+                // sanity check: ignore returns greater than 100,000% or less than -100,000%
+                if (fund.returns[k].lte(1000) && fund.returns[k].gte(-1000)) {
+                  // currentRate / pastRate - 1
+                  const quoteSymbolReturn = ratesResults.currentRate
+                    .div(ratesResults[k])
+                    .minus(1);
+                  // (fundReturns + 1) * (quoteSymbolReturns + 1) - 1
+                  convertedReturns[k] = fund.returns[k]
+                    .plus(1)
+                    .times(quoteSymbolReturn.plus(1))
+                    .minus(1);
+                } else
+                  logger.warn(
+                    `Invalid return for fund ${fund.name} ${fund.address} from ${fund.platformName}: ${fund.returns[k]}`
+                  );
+              }
+            } else
+              logger.error(
+                `Got invalid historical rate for fund ${fund.name} ${fund.address} from ${fund.platformName}: (${fund.denomToken.symbol}/${this.quoteSymbol}): ${ratesResults[k]}`
+              );
+          }
+          // copy converted fund data
+
+          const convert = x => {
+            if (isPosBN(x)) return x.times(ratesResults.currentRate);
+            return null;
+          };
+
+          quotedFunds.push({
+            name: fund.name,
+            address: fund.address,
+            denomSymbol: fund.denomToken.symbol,
+            inceptionTimestamp: fund.inceptionTimestamp,
+            aum: convert(fund.aum),
+            sharePrice: convert(fund.sharePrice),
+            returns: convertedReturns,
+            platformName: fund.platformName,
+            platformURL: fund.platformURL
+          });
+        } else
+          logger.error(
+            `Got invalid current rate for fund ${fund.name} (${fund.denomToken.symbol}/${this.quoteSymbol}): ${ratesResults.currentRate}`
+          );
+      })
+    );
+    if (quotedFunds.length === 0) logger.warn('No quoted funds');
     return quotedFunds;
   }
   renderFunds() {
@@ -196,7 +228,7 @@ class App {
     const end = Math.min(fundStart + this.perPage, this.filteredFunds.length);
     // sum value of funds
     const totalValue = this.filteredFunds.reduce(
-      (acc, i) => acc.plus(i.aum),
+      (acc, i) => (isPosBN(i.aum) ? acc.plus(i.aum) : acc),
       BigNumber(0)
     );
     // render table info header
@@ -213,14 +245,16 @@ class App {
     this.$pages.empty();
     const pages = Math.ceil(this.filteredFunds.length / this.perPage);
     // render page number links
-    for (let i = 1; i <= pages; i++) {
-      let pageLink = `
+    if (pages > 1) {
+      for (let i = 1; i <= pages; i++) {
+        let pageLink = `
       <a href="#app-message">${i}</a>
       `;
-      if (this.page == i) pageLink = `<b>${i}</b>`;
-      this.$pages.append(`
+        if (this.page == i) pageLink = `<b>${i}</b>`;
+        this.$pages.append(`
       <li>${pageLink}</li>
       `);
+      }
     }
   }
   // filter funds based on form criteria
@@ -231,8 +265,10 @@ class App {
           fund.name
             .toLowerCase()
             .includes(this.$searchBox.val().toLowerCase())) &&
-        (this.$minAssets.val() === '' || fund.aum.gte(this.$minAssets.val())) &&
-        (this.$maxAssets.val() === '' || fund.aum.lte(this.$maxAssets.val())) &&
+        (this.$minAssets.val() === '' ||
+          (isPosBN(fund.aum) && fund.aum.gte(this.$minAssets.val()))) &&
+        (this.$maxAssets.val() === '' ||
+          (isPosBN(fund.aum) && fund.aum.lte(this.$maxAssets.val()))) &&
         ((this.$melonCheck.is(':checked') && fund.platformName === 'Melon') ||
           (this.$tokensetsCheck.is(':checked') &&
             fund.platformName === 'TokenSets') ||
@@ -365,9 +401,11 @@ class App {
       html += `
         <tr>
           <td class="col-rank">
-            ${this.filteredFunds.findIndex(
-              _fund => _fund.address === fund.address
-            ) + 1}
+            ${
+              this.filteredFunds.findIndex(
+                _fund => _fund.address === fund.address
+              ) + 1
+            }
           </td>
           <td class="col-name">
             <a href="https://etherscan.io/address/${
@@ -425,22 +463,18 @@ class App {
     return html;
   }
   _fundReturnsHTML(returns) {
-    let html = '<span class="';
-    if (returns !== undefined) {
-      if (returns.gt(0)) html += 'positive-num">';
-      else if (returns.lt(0)) html += 'negative-num">';
-      else html += 'zero-num">';
-    } else html += 'no-num">';
-    html += formatPercentage(returns) + '</span>';
-    return html;
+    let className = 'no-num';
+    if (isBN(returns)) {
+      if (returns.gt(0)) className = 'positive-num';
+      else if (returns.lt(0)) className = 'negative-num';
+      else className = 'zero-num';
+    }
+    return `<span class="${className}">${formatPercentage(returns)}</span>`;
   }
 }
 
 // Convert unsafe strings for display in HTML
-const escapeHTML = string =>
-  $('<div/>')
-    .text(string)
-    .html();
+const escapeHTML = string => $('<div/>').text(string).html();
 
 // on document load
 $(async () => {

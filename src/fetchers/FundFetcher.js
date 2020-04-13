@@ -6,6 +6,7 @@ import BigNumber from 'bignumber.js';
 import { fetchMelonFunds } from './the_graph/melon';
 import { fetchBetokenFund } from './the_graph/betoken';
 import { fetchTokenSetsFunds } from './the_graph/tokensets';
+import logger from 'logger';
 
 export class FundFetcher {
   constructor(props) {
@@ -19,11 +20,12 @@ export class FundFetcher {
     const promises = this.fundPlatformFetchers.map(fetcher =>
       fetcher(this.batchSize, this.maxFunds, callBack)
     );
-    await Promise.all(promises);
+    await Promise.all(promises.map(p => p.catch(logger.error)));
   }
 
   // sort Fund objects
   sortFunds(funds, sortProp, isAscending) {
+    const asc = isAscending ? 1 : -1;
     funds.sort((a, b) => {
       let aProp, bProp;
       if (sortProp.includes('.')) {
@@ -34,18 +36,23 @@ export class FundFetcher {
         aProp = a[sortProp];
         bProp = b[sortProp];
       }
-      if (aProp !== undefined && bProp === undefined)
-        return isAscending ? 1 : -1;
-      if (aProp === undefined && bProp !== undefined)
-        return isAscending ? -1 : 1;
-      if (aProp instanceof BigNumber) {
-        if (aProp.lt(bProp)) return isAscending ? -1 : 1;
-        if (aProp.gt(bProp)) return isAscending ? 1 : -1;
-      } else {
-        if (aProp < bProp) return isAscending ? -1 : 1;
-        if (aProp > bProp) return isAscending ? 1 : -1;
+      if (aProp instanceof BigNumber && bProp instanceof BigNumber) {
+        if (aProp.isNaN() || bProp.isNaN())
+          return (aProp.isNaN() - bProp.isNaN()) * asc;
+        return aProp.minus(bProp).toNumber() * asc;
       }
-      return 0;
+      if (typeof aProp === 'number' && typeof bProp === 'number') {
+        if (isNaN(aProp) || isNaN(bProp))
+          return (isNaN(aProp) - isNaN(bProp)) * asc;
+        return (aProp - bProp) * asc;
+      }
+      if (typeof aProp === 'string' && typeof bProp === 'string') {
+        return (
+          aProp.localeCompare(bProp, 'en-US', { sensitivity: 'base' }) * asc
+        );
+      }
+      const isInvalid = x => x === undefined || x === null;
+      return (!isInvalid(aProp) - !isInvalid(bProp)) * asc;
     });
   }
 }

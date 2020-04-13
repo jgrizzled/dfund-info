@@ -7,6 +7,8 @@ import * as moment from 'moment';
 import BigNumber from 'bignumber.js';
 import { cryptoCompare } from './rates/cryptoCompare';
 import { alphaVantage } from './rates/alphaVantage';
+import { isPosBN } from 'utils/isBigNumber';
+import logger from 'logger';
 
 export class PriceFetcher {
   constructor(props) {
@@ -18,35 +20,89 @@ export class PriceFetcher {
     this.rateCache = [];
     this.fetchRate = this.fetchRate.bind(this);
     this.fetchTimeSeries = this.fetchTimeSeries.bind(this);
+    this._fetchCurrentRate = this._fetchCurrentRate.bind(this);
+    this._fetchHistoricalRate = this._fetchHistoricalRate.bind(this);
     this._storeRate = this._storeRate.bind(this);
     this._lookupRate = this._lookupRate.bind(this);
   }
+
   // check cache for rate or call API
   async fetchRate(_denomSymbol, _quoteSymbol, timestamp) {
-    // TODO find cUSDC rate API
-    if (_denomSymbol.toUpperCase() === 'CUSDC') return BigNumber(0.021);
-    const denomSymbol = this.normalizeTokenSymbol(_denomSymbol);
-    const quoteSymbol = this.normalizeTokenSymbol(_quoteSymbol);
-    if (denomSymbol == quoteSymbol) return BigNumber(1);
-    let rate = undefined;
+    let denomSymbol = this.normalizeTokenSymbol(_denomSymbol);
+    let quoteSymbol = this.normalizeTokenSymbol(_quoteSymbol);
+    const usdLike = ['USDC', 'DAI', 'USDT', 'GUSD', 'PAX'];
+
+    let adjustment = 1;
+    const compoundRate = 0.02;
+    const compoundTokens = ['CDAI', 'CUSDC', 'CETH'];
+    // TODO: fix Compound token historical prices
+    // CryptoCompare currently returns 0 for CDAI (╯°□°)╯︵ ┻━┻
+    // Wont include interest
+    if (compoundTokens.includes(denomSymbol)) {
+      adjustment = compoundRate;
+      denomSymbol = compoundTokens.find(i => i === denomSymbol).substr(1);
+    }
+    if (compoundTokens.includes(denomSymbol)) {
+      adjustment = 1 / compoundRate;
+      quoteSymbol = compoundTokens.find(i => i === quoteSymbol).substr(1);
+    }
+
+    // lookup USD-like tokens as USD to reduce fetches
+    if (denomSymbol !== 'USD' && usdLike.includes(denomSymbol))
+      denomSymbol = 'USD';
+
+    if (quoteSymbol !== 'USD' && usdLike.includes(quoteSymbol))
+      quoteSymbol = 'USD';
+
+    // assume 1 for USD stablecoins to reduce fetches
+    if (
+      denomSymbol === quoteSymbol ||
+      (quoteSymbol === 'USD' && usdLike.includes(denomSymbol)) ||
+      (denomSymbol === 'USD' && usdLike.includes(quoteSymbol))
+    )
+      return BigNumber(1).times(adjustment);
+
+    let rate, date, fetcher;
     if (timestamp === undefined) {
-      const todaysDate = moment().format('YYYY-MM-DD');
-      rate = this._lookupRate(denomSymbol, quoteSymbol, todaysDate);
-      if (rate !== undefined) return rate;
-      return await this._fetchCurrentRate(denomSymbol, quoteSymbol);
+      date = moment().format('YYYY-MM-DD');
+      fetcher = this._fetchCurrentRate;
     } else {
-      const date = moment.unix(timestamp).format('YYYY-MM-DD');
-      rate = this._lookupRate(denomSymbol, quoteSymbol, date);
-      if (rate !== undefined) return rate;
-      return await this._fetchHistoricalRate(
-        denomSymbol,
-        quoteSymbol,
-        timestamp
+      date = moment.unix(timestamp).format('YYYY-MM-DD');
+      fetcher = this._fetchHistoricalRate;
+    }
+    rate = this._lookupRate(denomSymbol, quoteSymbol, date);
+    if (isPosBN(rate)) return rate.times(adjustment);
+    try {
+      return (await fetcher(denomSymbol, quoteSymbol, timestamp)).times(
+        adjustment
       );
+    } catch (e) {
+      if (quoteSymbol === 'USD') {
+        // Try to get some USD-like quotes
+        for (const k of usdLike) {
+          try {
+            const [p1, p2] = await Promise.all([
+              fetcher(denomSymbol, k, timestamp),
+              fetcher(k, 'USD', timestamp)
+            ]);
+            if (isPosBN(p1) && isPosBN(p2))
+              return p1.times(p2).times(adjustment);
+          } catch (e) {
+            if (e.message.includes('rate limit')) throw e;
+            logger.warn(e);
+          }
+        }
+        throw new Error(
+          `Failed to find USD rate for ${denomSymbol}: ${e.message} - ${e.stack}`
+        );
+      }
+      throw e;
     }
   }
+
   // fetch time series, return and cache results
-  // Warning: no caching if called a second time for same pair
+  // Warning: does not cache
+  // TODO: handle retries
   async fetchTimeSeries(denomSymbol, quoteSymbol) {
     let _rates = undefined;
     _rates = await this.timeSeriesApi.fetchTimeSeries(denomSymbol, quoteSymbol);
@@ -60,19 +116,20 @@ export class PriceFetcher {
     });
     return _rates;
   }
+
   //normalize symbols for price lookup
   normalizeTokenSymbol(_symbol) {
     const symbol = _symbol.toUpperCase();
     const symbolLookup = {
       BTC: ['WBTC', 'TBTC', 'imBTC'],
-      ETH: ['WETH'],
-      USD: ['DAI', 'USDC', 'USDT', 'GUSD', 'PAX']
+      ETH: ['WETH']
     };
     for (const normalSymbol of Object.keys(symbolLookup)) {
       if (symbolLookup[normalSymbol].includes(symbol)) return normalSymbol;
     }
     return symbol;
   }
+
   // lookup rate in cache
   _lookupRate(denomSymbol, quoteSymbol, date) {
     const dateRates = this.rateCache.find(_rates => _rates.date === date);
@@ -97,6 +154,7 @@ export class PriceFetcher {
         );
     }
   }
+
   // store rate in cache
   _storeRate(rate, denomSymbol, quoteSymbol, date) {
     const ratesIndex = this.rateCache.findIndex(_rates => _rates.date === date);
@@ -123,22 +181,30 @@ export class PriceFetcher {
         [denomSymbol]: rate
       };
   }
+
   // call RatesApi for current rate
   async _fetchCurrentRate(denomSymbol, quoteSymbol) {
-    let rate = undefined;
-    rate = await this.ratesApi.fetchCurrentRate(denomSymbol, quoteSymbol);
+    let rate = await this.ratesApi.fetchCurrentRate(denomSymbol, quoteSymbol);
+    if (!isPosBN(rate))
+      throw new Error(
+        `Invalid data for ${denomSymbol}/${quoteSymbol}: ${rate}`
+      );
     const date = moment().format('YYYY-MM-DD');
     this._storeRate(rate, denomSymbol, quoteSymbol, date);
     return rate;
   }
+
   // call RatesApi for historical rate
   async _fetchHistoricalRate(denomSymbol, quoteSymbol, timestamp) {
-    let rate = undefined;
-    rate = await this.ratesApi.fetchHistoricalRate(
+    let rate = await this.ratesApi.fetchHistoricalRate(
       denomSymbol,
       quoteSymbol,
       timestamp
     );
+    if (!isPosBN(rate))
+      throw new Error(
+        `Invalid data for ${denomSymbol}/${quoteSymbol}: ${rate}`
+      );
     const date = moment.unix(timestamp).format('YYYY-MM-DD');
     this._storeRate(rate, denomSymbol, quoteSymbol, date);
     return rate;
