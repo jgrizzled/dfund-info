@@ -6,7 +6,7 @@
   "homepage": "https://jgrizzled.github.io/dfund-info",
   "dependencies": {
     "bignumber": "^1.1.0",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.0",
     "moment": "^2.24.0",
     "web3": "^1.2.4"
   },
