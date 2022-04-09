@@ -7,7 +7,7 @@
   "dependencies": {
     "bignumber": "^1.1.0",
     "jquery": "^3.4.1",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "web3": "^1.2.4"
   },
   "devDependencies": {
